@@ -169,19 +169,9 @@
     .ns-val{font-family:var(--ff-m);font-size:clamp(1.6rem,3vw,2.2rem);font-weight:700;color:var(--accent);line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
     .ns-lbl{font-family:var(--ff-m);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
     @media(max-width:580px){.net-strip{grid-template-columns:1fr 1fr}.ns{border-bottom:1px solid var(--border)}}
-    /* countdown bar row */
-    .ns-footer{
-      grid-column:1/-1;
-      display:flex;align-items:center;gap:10px;
-      padding:8px 20px;border-top:1px solid var(--border);
-      background:var(--raised);
-    }
-    .ns-countdown-bar{flex:1;height:2px;background:var(--dim);border-radius:2px;overflow:hidden}
-    .ns-countdown-fill{height:100%;background:var(--accent);border-radius:2px;transform-origin:left;transition:none}
-    .ns-countdown-label{font-family:var(--ff-m);font-size:.6rem;color:var(--muted);letter-spacing:.06em;white-space:nowrap;flex-shrink:0}
-    /* flash on refresh */
-    @keyframes tileFlash{0%{background:var(--a2)}60%{background:var(--a2)}100%{background:transparent}}
-    .ns-flash{animation:tileFlash .9s ease forwards}
+    /* number roll on refresh */
+    @keyframes valBump{0%{transform:translateY(0);opacity:1}30%{transform:translateY(-6px);opacity:0}31%{transform:translateY(6px);opacity:0}100%{transform:translateY(0);opacity:1}}
+    .ns-val.rolling{animation:valBump .45s ease}
 
     /* ---------- SECTION WRAPPER ---------- */
     .section{padding:clamp(50px,8vw,100px) clamp(20px,4vw,60px)}
@@ -383,10 +373,6 @@
   <div class="ns"><div class="ns-val" id="ns-bots">--</div><div class="ns-lbl">Bot types seen</div></div>
   <div class="ns"><div class="ns-val" id="ns-robots">--%</div><div class="ns-lbl">Fetch robots.txt</div></div>
   <div class="ns"><div class="ns-val" id="ns-llms">--%</div><div class="ns-lbl">Probe /llms.txt</div></div>
-  <div class="ns-footer">
-    <div class="ns-countdown-bar"><div class="ns-countdown-fill" id="ns-cd-fill"></div></div>
-    <span class="ns-countdown-label" id="ns-cd-label">refreshing&hellip;</span>
-  </div>
 </div>
 
 <hr class="div">
@@ -862,14 +848,25 @@ function fmt(n) {
   if (n >= 1000) return (n / 1000).toFixed(0) + 'k';
   return String(n);
 }
-function animCount(el, target, dur) {
+function animCount(el, target, dur, suffix) {
+  const from  = parseFloat(el.dataset.val || '0');
+  const range = target - from;
   const start = performance.now();
-  const isFloat = target !== Math.floor(target);
+  el.dataset.val = target;
+  // kick the roll animation on update (not initial load)
+  if (from !== 0 && from !== target) {
+    el.classList.remove('rolling');
+    void el.offsetWidth;
+    el.classList.add('rolling');
+  }
+  function fmt(v) {
+    if (suffix) return Math.round(v) + suffix;
+    return Math.round(v) >= 1000 ? (Math.round(v) / 1000).toFixed(0) + 'k' : String(Math.round(v));
+  }
   function tick(now) {
-    const p = Math.min((now - start) / (dur || 1200), 1);
+    const p    = Math.min((now - start) / (dur || 1200), 1);
     const ease = 1 - Math.pow(1 - p, 3);
-    const v = ease * target;
-    el.textContent = isFloat ? v.toFixed(0) + '%' : Math.round(v) >= 1000 ? (Math.round(v) / 1000).toFixed(0) + 'k' : String(Math.round(v));
+    el.textContent = fmt(from + ease * range);
     if (p < 1) requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
@@ -889,11 +886,11 @@ async function loadNetwork() {
   const paths = d.top_paths  || [];
   const seq   = d.first_requests || [];
 
-  animCount(document.getElementById('ns-contribs'), net.contributions || 0);
-  document.getElementById('ns-bots').textContent  = net.unique_bots || bots.length || 0;
   const rPct = pr.robots_pct || 0, lPct = pr.llmstxt_pct || 0;
-  document.getElementById('ns-robots').textContent = rPct + '%';
-  document.getElementById('ns-llms').textContent   = lPct + '%';
+  animCount(document.getElementById('ns-contribs'), net.contributions || 0);
+  animCount(document.getElementById('ns-bots'),     net.unique_bots || bots.length || 0);
+  animCount(document.getElementById('ns-robots'),   rPct, 900, '%');
+  animCount(document.getElementById('ns-llms'),     lPct, 900, '%');
   document.getElementById('nb-sub').textContent = net.contributions
     ? `${fmt(net.contributions)} events from ${net.contributors || 1} contributing site${net.contributors !== 1 ? 's' : ''}`
     : 'no contributions yet -- be the first';
@@ -974,55 +971,13 @@ async function loadHellos() {
   </table>`;
 }
 
-// ---- AUTO-REFRESH WITH COUNTDOWN ----
-const REFRESH_MS = 5 * 60 * 1000; // 5 minutes
-let refreshAt = Date.now() + REFRESH_MS;
-
-function fmtCountdown(ms) {
-  const s = Math.max(0, Math.ceil(ms / 1000));
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return `${m}:${String(sec).padStart(2, '0')}`;
-}
-
-function flashTiles() {
-  document.querySelectorAll('.ns').forEach(el => {
-    el.classList.remove('ns-flash');
-    void el.offsetWidth; // reflow to restart animation
-    el.classList.add('ns-flash');
-  });
-}
-
-function tickCountdown() {
-  const remaining = refreshAt - Date.now();
-  const fill = document.getElementById('ns-cd-fill');
-  const label = document.getElementById('ns-cd-label');
-
-  if (remaining <= 0) {
-    // Trigger refresh
-    label.textContent = 'refreshing...';
-    fill.style.width = '0%';
-    loadNetwork().then(() => {
-      flashTiles();
-      refreshAt = Date.now() + REFRESH_MS;
-    });
-  } else {
-    const pct = (remaining / REFRESH_MS) * 100;
-    fill.style.width = pct + '%';
-    label.textContent = `refresh in ${fmtCountdown(remaining)}`;
-  }
-}
+// ---- AUTO-REFRESH ----
+// Every 5 minutes, re-fetch network data silently.
+// animCount() handles the rolling animation on the tile numbers.
+setInterval(loadNetwork, 5 * 60 * 1000);
 
 // ---- BOOT ----
-window.addEventListener('load', () => {
-  loadNetwork();
-  loadHellos();
-  // start countdown bar one tick after load so it shows from full
-  setTimeout(() => {
-    tickCountdown();
-    setInterval(tickCountdown, 1000);
-  }, 800);
-});
+window.addEventListener('load', () => { loadNetwork(); loadHellos(); });
 </script>
 </body>
 </html>
