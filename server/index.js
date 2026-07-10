@@ -42,13 +42,18 @@ app.use("/hello",      apiLimiter,    helloRoutes);
 app.use("/api",        apiLimiter,    apiRoutes);
 app.use("/sites",      siteRoutes);
 
-// Serve dashboard
+// Serve dashboard static assets
 app.use(express.static(path.join(__dirname, "../dashboard")));
 
 // Health check
 app.get("/health", (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
-// Catch-all → dashboard
+// Private per-site dashboard (requires API key, entered in browser)
+app.get("/dashboard", (_req, res) => {
+  res.sendFile(path.join(__dirname, "../dashboard/site.html"));
+});
+
+// Catch-all -> public network dashboard
 app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "../dashboard/index.html"));
 });

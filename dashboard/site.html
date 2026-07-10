@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Observatory</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────────────────── */
+    :root {
+      --bg:          #0C0F1A;
+      --surface:     #141824;
+      --raised:      #1C2236;
+      --border:      #252D40;
+      --accent:      #E8840A;
+      --accent-dim:  rgba(232,132,10,0.12);
+      --good:        #2FA66E;
+      --bad:         #E05252;
+      --text:        #C8D4E8;
+      --text-muted:  #5A6880;
+      --text-dim:    #3A4558;
+      --grid:        rgba(255,255,255,0.03);
+      --font-display: 'Charter', 'Bitstream Charter', 'Sitka Text', Georgia, serif;
+      --font-mono:   ui-monospace, 'Cascadia Code', 'Consolas', 'Menlo', monospace;
+      --font-body:   system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg:         #F4F2ED;
+        --surface:    #FEFCF8;
+        --raised:     #EDE9E0;
+        --border:     #D6D0C4;
+        --accent:     #C56A00;
+        --accent-dim: rgba(197,106,0,0.10);
+        --good:       #1A7A50;
+        --bad:        #C03030;
+        --text:       #1A1F30;
+        --text-muted: #7A8299;
+        --text-dim:   #B0AAAA;
+        --grid:       rgba(0,0,0,0.04);
+      }
+    }
+    :root[data-theme="light"] {
+      --bg:         #F4F2ED;
+      --surface:    #FEFCF8;
+      --raised:     #EDE9E0;
+      --border:     #D6D0C4;
+      --accent:     #C56A00;
+      --accent-dim: rgba(197,106,0,0.10);
+      --good:       #1A7A50;
+      --bad:        #C03030;
+      --text:       #1A1F30;
+      --text-muted: #7A8299;
+      --text-dim:   #B0AAAA;
+      --grid:       rgba(0,0,0,0.04);
+    }
+    :root[data-theme="dark"] {
+      --bg:          #0C0F1A;
+      --surface:     #141824;
+      --raised:      #1C2236;
+      --border:      #252D40;
+      --accent:      #E8840A;
+      --accent-dim:  rgba(232,132,10,0.12);
+      --good:        #2FA66E;
+      --bad:         #E05252;
+      --text:        #C8D4E8;
+      --text-muted:  #5A6880;
+      --text-dim:    #3A4558;
+      --grid:        rgba(255,255,255,0.03);
+    }
+
+    /* ── Reset + base ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 15px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { cursor: pointer; font: inherit; }
+
+    /* ── Layout ─────────────────────────────────────────────────────────── */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .header-logo svg { flex-shrink: 0; }
+    .header-sep { flex: 1; }
+    .header-domain {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 10px;
+    }
+    .period-tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 3px;
+    }
+    .period-tab {
+      background: none;
+      border: none;
+      border-radius: 3px;
+      padding: 3px 10px;
+      font-family: var(--font-mono);
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .period-tab.active {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+    .period-tab:hover:not(.active) { color: var(--text); }
+    .theme-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 5px 8px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      transition: color 0.15s;
+    }
+    .theme-btn:hover { color: var(--text); }
+
+    /* Auth gate */
+    .auth-gate {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 40px;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+    }
+    .auth-card h2 {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+    .auth-card p { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 24px; }
+    .auth-input {
+      width: 100%;
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text);
+      margin-bottom: 12px;
+      outline: none;
+    }
+    .auth-input:focus { border-color: var(--accent); }
+    .auth-btn {
+      width: 100%;
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      padding: 10px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .auth-btn:hover { opacity: 0.9; }
+
+    /* Main content */
+    .main { flex: 1; padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+    /* ── Stat tiles ─────────────────────────────────────────────────────── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      opacity: 0.4;
+    }
+    .stat-card.highlight::before { opacity: 1; }
+    .stat-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+    .stat-card.highlight .stat-value { color: var(--accent); }
+    .stat-sub {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ── Probe rates ────────────────────────────────────────────────────── */
+    .probe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .probe-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .probe-name {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .probe-bar-wrap {
+      background: var(--raised);
+      border-radius: 2px;
+      height: 4px;
+      margin-bottom: 6px;
+    }
+    .probe-bar {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+    .probe-pct {
+      font-family: var(--font-mono);
+      font-size: 1.2rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Charts row ─────────────────────────────────────────────────────── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+    }
+    .chart-title {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+    .chart-wrap { position: relative; height: 200px; }
+
+    /* ── Tables ─────────────────────────────────────────────────────────── */
+    .tables-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 780px) { .tables-row { grid-template-columns: 1fr; } }
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+      overflow: hidden;
+    }
+    .table-card h3 {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .data-table th {
+      text-align: left;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 0 0 8px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 500;
+    }
+    .data-table td {
+      padding: 7px 0;
+      border-bottom: 1px solid var(--grid);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .data-table td:last-child { text-align: right; color: var(--accent); }
+    .path-cell { color: var(--text); word-break: break-all; }
+    .bot-name { color: var(--text); }
+    .bot-vendor { color: var(--text-muted); font-size: 0.68rem; margin-left: 4px; }
+    .badge {
+      display: inline-block;
+      font-size: 0.62rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .badge-ai      { background: var(--accent-dim); color: var(--accent); }
+    .badge-probe   { background: rgba(47,166,110,0.12); color: var(--good); }
+    .badge-content { background: var(--raised); color: var(--text-muted); }
+
+    /* ── First-request sequence ─────────────────────────────────────────── */
+    .sequence-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+    .sequence-card h3 {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .seq-list { display: flex; flex-direction: column; gap: 6px; }
+    .seq-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      background: var(--raised);
+      border-radius: 5px;
+      border: 1px solid var(--border);
+    }
+    .seq-rank {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      width: 20px;
+      flex-shrink: 0;
+    }
+    .seq-path {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--accent);
+      flex: 1;
+    }
+    .seq-bar-wrap { width: 120px; background: var(--bg); border-radius: 2px; height: 4px; flex-shrink: 0; }
+    .seq-bar { height: 100%; border-radius: 2px; background: var(--accent); }
+    .seq-count {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      width: 40px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ── Loading / empty ────────────────────────────────────────────────── */
+    .loading {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+    }
+    .spinner {
+      width: 24px; height: 24px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Section label ──────────────────────────────────────────────────── */
+    .section-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      padding-left: 2px;
+    }
+
+    /* ── Scrollable overflow ────────────────────────────────────────────── */
+    .overflow-x { overflow-x: auto; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-logo">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="11" r="10" stroke="var(--accent)" stroke-width="1.5"/>
+        <circle cx="11" cy="11" r="6"  stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 2"/>
+        <circle cx="11" cy="11" r="2"  fill="var(--accent)"/>
+        <line x1="11" y1="1" x2="11" y2="5"  stroke="var(--accent)" stroke-width="1.5"/>
+        <line x1="11" y1="17" x2="11" y2="21" stroke="var(--accent)" stroke-width="1.5"/>
+        <line x1="1" y1="11" x2="5" y2="11"  stroke="var(--accent)" stroke-width="1.5"/>
+        <line x1="17" y1="11" x2="21" y2="11" stroke="var(--accent)" stroke-width="1.5"/>
+      </svg>
+      AI Observatory
+    </div>
+    <span class="header-sep"></span>
+    <span class="header-domain" id="hdr-domain">...</span>
+    <div class="period-tabs" id="period-tabs">
+      <button class="period-tab" data-days="7">7d</button>
+      <button class="period-tab active" data-days="30">30d</button>
+      <button class="period-tab" data-days="90">90d</button>
+    </div>
+    <button class="theme-btn" id="theme-toggle" title="Toggle theme">◐</button>
+  </header>
+
+  <!-- Auth gate (hidden once authed) -->
+  <div class="auth-gate" id="auth-gate">
+    <div class="auth-card">
+      <h2>Enter API Key</h2>
+      <p>Paste your site API key to view your crawler analytics.</p>
+      <input class="auth-input" id="api-key-input" type="password" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off">
+      <button class="auth-btn" id="auth-btn">Connect</button>
+    </div>
+  </div>
+
+  <!-- Dashboard (shown after auth) -->
+  <main class="main" id="dashboard" style="display:none">
+    <div id="content">
+      <div class="loading"><div class="spinner"></div>Loading data…</div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+// ── Theme ───────────────────────────────────────────────────────────────────
+const root = document.documentElement;
+const themeBtn = document.getElementById('theme-toggle');
+const saved = localStorage.getItem('aio-theme') || 'dark';
+root.dataset.theme = saved;
+themeBtn.onclick = () => {
+  const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  root.dataset.theme = next;
+  localStorage.setItem('aio-theme', next);
+};
+
+// ── Auth ────────────────────────────────────────────────────────────────────
+let API_KEY = localStorage.getItem('aio-key') || '';
+let DAYS    = 30;
+
+const authGate  = document.getElementById('auth-gate');
+const dashboard = document.getElementById('dashboard');
+const authInput = document.getElementById('api-key-input');
+const authBtn   = document.getElementById('auth-btn');
+
+async function connect(key) {
+  const res = await fetch(`/sites/validate?api_key=${encodeURIComponent(key)}`);
+  const data = await res.json();
+  if (!data.valid) { alert('Invalid API key'); return; }
+  API_KEY = key;
+  localStorage.setItem('aio-key', key);
+  document.getElementById('hdr-domain').textContent = data.domain;
+  authGate.style.display = 'none';
+  dashboard.style.display = 'block';
+  loadData();
+}
+
+authBtn.onclick = () => connect(authInput.value.trim());
+authInput.addEventListener('keydown', e => { if (e.key === 'Enter') authBtn.click(); });
+if (API_KEY) connect(API_KEY);
+
+// ── Period tabs ─────────────────────────────────────────────────────────────
+document.getElementById('period-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.period-tab');
+  if (!btn) return;
+  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  DAYS = parseInt(btn.dataset.days);
+  loadData();
+});
+
+// ── Data loading ────────────────────────────────────────────────────────────
+let charts = {};
+
+async function loadData() {
+  document.getElementById('content').innerHTML =
+    '<div class="loading"><div class="spinner"></div>Loading data…</div>';
+
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  const res  = await fetch(`/api/stats?days=${DAYS}&api_key=${encodeURIComponent(API_KEY)}`);
+  const data = await res.json();
+  render(data);
+}
+
+// ── Render ──────────────────────────────────────────────────────────────────
+function fmt(n) { return (n || 0).toLocaleString(); }
+function pct(n) { return `${n ?? 0}%`; }
+
+function render(d) {
+  const s = d.summary || {};
+  const pr = d.probe_rates || {};
+
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <!-- Stat tiles -->
+    <p class="section-label">Overview · last ${d.period_days} days</p>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Sessions</div>
+        <div class="stat-value">${fmt(s.total_sessions)}</div>
+        <div class="stat-sub">unique crawl sessions</div>
+      </div>
+      <div class="stat-card highlight">
+        <div class="stat-label">AI Bot Sessions</div>
+        <div class="stat-value">${fmt(s.ai_bot_sessions)}</div>
+        <div class="stat-sub">${pct(s.ai_bot_pct)} of all traffic</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">robots.txt Compliance</div>
+        <div class="stat-value">${pct(pr.robots_pct)}</div>
+        <div class="stat-sub">of AI sessions fetch it first</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Unique Bot Types</div>
+        <div class="stat-value">${fmt((d.top_bots || []).length)}</div>
+        <div class="stat-sub">distinct agents detected</div>
+      </div>
+    </div>
+
+    <!-- Probe rates -->
+    <p class="section-label">Protocol probe rates · AI bots only</p>
+    <div class="probe-grid" id="probe-grid"></div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Daily request volume</div>
+        <div class="chart-wrap"><canvas id="chart-daily"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Bot vendor breakdown</div>
+        <div class="chart-wrap"><canvas id="chart-bots"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Path categories</div>
+        <div class="chart-wrap"><canvas id="chart-cats"></canvas></div>
+      </div>
+    </div>
+
+    <!-- First request sequence -->
+    <div class="sequence-card">
+      <h3>First URL Requested: crawl session entry points</h3>
+      <div class="seq-list" id="seq-list"></div>
+    </div>
+
+    <!-- Tables -->
+    <div class="tables-row">
+      <div class="table-card">
+        <h3>Top AI Bots</h3>
+        <div class="overflow-x">
+          <table class="data-table" id="tbl-bots">
+            <thead><tr><th>Bot</th><th>Sessions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="table-card">
+        <h3>Most Requested Paths</h3>
+        <div class="overflow-x">
+          <table class="data-table" id="tbl-paths">
+            <thead><tr><th>Path</th><th>Hits</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+
+  renderProbeCards(pr);
+  renderCharts(d);
+  renderSequence(d.first_requests || []);
+  renderBotTable(d.top_bots || []);
+  renderPathTable(d.top_paths || []);
+}
+
+function renderProbeCards(pr) {
+  const probes = [
+    { label: '/robots.txt',   key: 'robots_pct' },
+    { label: '/sitemap.xml',  key: 'sitemap_pct' },
+    { label: '/openapi.json', key: 'openapi_pct' },
+    { label: '/llms.txt',     key: 'llmstxt_pct' },
+  ];
+  const grid = document.getElementById('probe-grid');
+  grid.innerHTML = probes.map(p => {
+    const v = pr[p.key] ?? 0;
+    return `
+      <div class="probe-card">
+        <div class="probe-name">${p.label}</div>
+        <div class="probe-bar-wrap">
+          <div class="probe-bar" style="width:${v}%"></div>
+        </div>
+        <div class="probe-pct">${v}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function getChartDefaults() {
+  const dark = document.documentElement.dataset.theme !== 'light' &&
+               !window.matchMedia('(prefers-color-scheme: light)').matches;
+  return {
+    gridColor:   dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
+    textColor:   dark ? '#5A6880'                : '#7A8299',
+    accent:      dark ? '#E8840A'                : '#C56A00',
+    good:        dark ? '#2FA66E'                : '#1A7A50',
+  };
+}
+
+function renderCharts(d) {
+  const cfg = getChartDefaults();
+  const daily = d.daily_volume || [];
+  const bots  = (d.top_bots || []).slice(0, 6);
+  const paths = d.top_paths || [];
+
+  // Palette for pie/doughnut
+  const palette = ['#E8840A','#2FA66E','#4E9DE8','#B46DE8','#E84E72','#E8C84E'];
+
+  // Daily volume area chart
+  charts.daily = new Chart(document.getElementById('chart-daily'), {
+    type: 'line',
+    data: {
+      labels: daily.map(r => r.day),
+      datasets: [{
+        data: daily.map(r => r.requests),
+        borderColor: cfg.accent,
+        backgroundColor: `${cfg.accent}22`,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 2,
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: cfg.gridColor }, ticks: { color: cfg.textColor, maxTicksLimit: 6, font: { family: 'monospace', size: 10 } } },
+        y: { grid: { color: cfg.gridColor }, ticks: { color: cfg.textColor, font: { family: 'monospace', size: 10 } } },
+      },
+    },
+  });
+
+  // Bot breakdown doughnut
+  charts.bots = new Chart(document.getElementById('chart-bots'), {
+    type: 'doughnut',
+    data: {
+      labels: bots.map(b => b.bot_name || 'Unknown'),
+      datasets: [{
+        data: bots.map(b => b.sessions),
+        backgroundColor: palette,
+        borderWidth: 0,
+        hoverOffset: 6,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { color: cfg.textColor, font: { family: 'monospace', size: 10 }, boxWidth: 10, padding: 8 },
+        },
+      },
+      cutout: '65%',
+    },
+  });
+
+  // Path categories horizontal bar
+  const cats = {};
+  (d.top_paths || []).forEach(p => {
+    cats[p.path_category] = (cats[p.path_category] || 0) + p.hits;
+  });
+  const catLabels = Object.keys(cats);
+  const catData   = catLabels.map(c => cats[c]);
+
+  charts.cats = new Chart(document.getElementById('chart-cats'), {
+    type: 'bar',
+    data: {
+      labels: catLabels,
+      datasets: [{
+        data: catData,
+        backgroundColor: palette,
+        borderRadius: 3,
+        borderWidth: 0,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: cfg.gridColor }, ticks: { color: cfg.textColor, font: { family: 'monospace', size: 10 } } },
+        y: { grid: { display: false },       ticks: { color: cfg.textColor, font: { family: 'monospace', size: 10 } } },
+      },
+    },
+  });
+}
+
+function renderSequence(items) {
+  const max = items[0]?.cnt || 1;
+  document.getElementById('seq-list').innerHTML = items.map((item, i) => `
+    <div class="seq-item">
+      <span class="seq-rank">${i + 1}</span>
+      <span class="seq-path">${escHtml(item.path)}</span>
+      <div class="seq-bar-wrap">
+        <div class="seq-bar" style="width:${Math.round(item.cnt / max * 100)}%"></div>
+      </div>
+      <span class="seq-count">${fmt(item.cnt)}</span>
+    </div>
+  `).join('');
+}
+
+function renderBotTable(bots) {
+  document.querySelector('#tbl-bots tbody').innerHTML = bots.map(b => `
+    <tr>
+      <td>
+        <span class="bot-name">${escHtml(b.bot_name || 'Unknown')}</span>
+        <span class="bot-vendor">${escHtml(b.bot_vendor || '')}</span>
+      </td>
+      <td>${fmt(b.sessions)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderPathTable(paths) {
+  document.querySelector('#tbl-paths tbody').innerHTML = paths.slice(0, 20).map(p => `
+    <tr>
+      <td class="path-cell">
+        ${escHtml(p.path)}
+        ${p.is_probe ? '<span class="badge badge-probe ml2">probe</span>' : ''}
+      </td>
+      <td>${fmt(p.hits)}</td>
+    </tr>
+  `).join('');
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
