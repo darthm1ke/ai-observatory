@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Agent Intel - Live AI Crawler Network</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18' fill='none'%3E%3Ccircle cx='9' cy='9' r='8' stroke='%23F07A00' stroke-width='1.4'/%3E%3Ccircle cx='9' cy='9' r='4.5' stroke='%23F07A00' stroke-width='1' stroke-dasharray='2 1.5'/%3E%3Ccircle cx='9' cy='9' r='1.8' fill='%23F07A00'/%3E%3Cline x1='9' y1='.8' x2='9' y2='3.5' stroke='%23F07A00' stroke-width='1.4'/%3E%3Cline x1='9' y1='14.5' x2='9' y2='17.2' stroke='%23F07A00' stroke-width='1.4'/%3E%3Cline x1='.8' y1='9' x2='3.5' y2='9' stroke='%23F07A00' stroke-width='1.4'/%3E%3Cline x1='14.5' y1='9' x2='17.2' y2='9' stroke='%23F07A00' stroke-width='1.4'/%3E%3C/svg%3E">
   <style>
     :root {
       --bg:      #080B14;
@@ -281,8 +282,31 @@
     .proto-who{font-size:.6rem;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px}
 
     /* ---------- INSTALL ---------- */
-    .install-tabs{display:flex;gap:0;margin-top:36px}
-    .itab{padding:8px 22px;border:1px solid var(--border);background:var(--surface);font-family:var(--ff-m);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;transition:all .15s}
+    .install-tracks{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:36px}
+    @media(max-width:780px){.install-tracks{grid-template-columns:1fr}}
+    .track{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface)}
+    .track.track-easy{border-color:var(--good)}
+    .track-head{padding:18px 22px;border-bottom:1px solid var(--border);background:var(--raised)}
+    .track-easy .track-head{background:rgba(34,201,122,.06);border-bottom-color:rgba(34,201,122,.2)}
+    .track-badge{font-family:var(--ff-m);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+    .track-easy .track-badge{color:var(--good)}
+    .track-full .track-badge{color:var(--accent)}
+    .track-title{font-family:var(--ff-d);font-size:1rem;font-weight:700;margin-bottom:4px}
+    .track-desc{font-size:.78rem;color:var(--muted);line-height:1.5}
+    .track-body{padding:20px 22px}
+    /* easy track */
+    .req-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+    .chip{font-family:var(--ff-m);font-size:.62rem;padding:3px 9px;border-radius:3px;background:var(--raised);border:1px solid var(--border);color:var(--muted)}
+    /* full track steps */
+    .steps{display:flex;flex-direction:column;gap:12px}
+    .step{display:flex;gap:12px;align-items:flex-start}
+    .step-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-family:var(--ff-m);font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+    .step-text{font-size:.82rem;color:var(--text);line-height:1.55}
+    .step-text strong{color:var(--text)}
+    .step-text span{color:var(--muted)}
+    /* code block (shared) */
+    .install-tabs{display:flex;gap:0;margin-top:16px}
+    .itab{padding:7px 18px;border:1px solid var(--border);background:var(--surface);font-family:var(--ff-m);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;transition:all .15s}
     .itab:first-child{border-radius:5px 0 0 0}
     .itab:last-child{border-radius:0 5px 0 0;border-left:none}
     .itab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -291,7 +315,7 @@
     .ib-head{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--border);font-family:var(--ff-m);font-size:.66rem;color:var(--muted)}
     .copy-btn{background:none;border:1px solid var(--border);border-radius:3px;padding:3px 10px;font-family:var(--ff-m);font-size:.62rem;color:var(--muted);cursor:pointer;transition:all .15s;letter-spacing:.05em}
     .copy-btn:hover{color:var(--text);border-color:var(--accent)}
-    pre.code{padding:20px;overflow-x:auto;font-family:var(--ff-m);font-size:.8rem;line-height:1.75;color:var(--text)}
+    pre.code{padding:18px;overflow-x:auto;font-family:var(--ff-m);font-size:.78rem;line-height:1.75;color:var(--text)}
     .kw{color:#569CD6}.str{color:#CE9178}.cmt{color:var(--muted);font-style:italic}.fn{color:#DCDCAA}.var{color:#9CDCFE}
 
     /* ---------- SKELETON ---------- */
@@ -481,41 +505,144 @@
 <!-- INSTALL -->
 <section class="section" id="install">
   <div class="reveal">
-    <p class="sec-label">Start contributing</p>
-    <h2 class="sec-title">One file.<br>Your site feeds the network.</h2>
-    <p class="sec-sub">Install the tracker, host your own dashboard, and your anonymous crawler data joins this public feed automatically.</p>
+    <p class="sec-label">Two ways to participate</p>
+    <h2 class="sec-title">Pick the path<br>that fits your setup</h2>
+    <p class="sec-sub">There are two distinct setups. One takes two minutes on any PHP site. The other requires a server you control and gives you a private dashboard for your own data.</p>
   </div>
 
-  <div class="reveal reveal-delay-1">
-    <div class="install-tabs">
-      <button class="itab active" onclick="tab('php')">PHP</button>
-      <button class="itab" onclick="tab('node')">Node.js</button>
-      <button class="itab" onclick="tab('self')">Self-host</button>
-    </div>
-    <div class="iblock active" id="t-php">
-      <div class="ib-head"><span>header.php</span><button class="copy-btn" onclick="copy('c-php')">copy</button></div>
-      <pre class="code" id="c-php"><span class="fn">define</span>(<span class="str">'AIO_API_KEY'</span>,  <span class="str">'your-api-key'</span>);
-<span class="fn">define</span>(<span class="str">'AIO_ENDPOINT'</span>, <span class="str">'https://your-server.com/beacon'</span>);
-<span class="kw">require_once</span> <span class="str">'ai-observatory.php'</span>;
-<span class="cmt">// Bot activity logged to your server.
-// Anonymous signals contributed to ai-agent-intel.com automatically.</span></pre>
-    </div>
-    <div class="iblock" id="t-node">
-      <div class="ib-head"><span>server.js</span><button class="copy-btn" onclick="copy('c-node')">copy</button></div>
-      <pre class="code" id="c-node"><span class="kw">const</span> { <span class="var">observatory</span> } = <span class="fn">require</span>(<span class="str">'./ai-observatory'</span>);
-<span class="var">app</span>.<span class="fn">use</span>(<span class="fn">observatory</span>({ <span class="var">apiKey</span>: <span class="str">'your-key'</span>, <span class="var">endpoint</span>: <span class="str">'https://your-server.com/beacon'</span> }));</pre>
-    </div>
-    <div class="iblock" id="t-self">
-      <div class="ib-head"><span>terminal</span><button class="copy-btn" onclick="copy('c-self')">copy</button></div>
-      <pre class="code" id="c-self">git clone https://github.com/darthm1ke/ai-observatory
-<span class="kw">cd</span> ai-observatory &amp;&amp; cp .env.example .env
-docker compose up -d</pre>
+  <div class="install-tracks reveal reveal-delay-1">
+
+    <!-- TRACK A: contribute only -->
+    <div class="track track-easy">
+      <div class="track-head">
+        <div class="track-badge">Easiest &mdash; no server required</div>
+        <div class="track-title">Just contribute to the network</div>
+        <div class="track-desc">You have a PHP website. You want your bot traffic to show up in the public data above. That&rsquo;s it &mdash; no account, no server, no dashboard.</div>
+      </div>
+      <div class="track-body">
+        <div class="req-chips">
+          <span class="chip">PHP site</span>
+          <span class="chip">cURL or fsockopen enabled</span>
+          <span class="chip">~2 minutes</span>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num" style="background:var(--good)">1</div>
+            <div class="step-text">Download <strong>aio-phonehome.php</strong> from the repo and upload it to your website&rsquo;s root folder (same place as your index.php).</div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--good)">2</div>
+            <div class="step-text">Add one line to the very top of your PHP header or index.php file:</div>
+          </div>
+        </div>
+        <div class="install-tabs" style="margin-top:14px">
+          <button class="itab active" onclick="tab2('easy-php')">PHP</button>
+        </div>
+        <div class="iblock active" id="t-easy-php">
+          <div class="ib-head"><span>index.php or header.php</span><button class="copy-btn" onclick="copy('c-easy')">copy</button></div>
+          <pre class="code" id="c-easy"><span class="kw">require_once</span> <span class="str">'aio-phonehome.php'</span>;
+<span class="cmt">// That's it. Bot visits will appear on ai-agent-intel.com within minutes.</span></pre>
+        </div>
+        <div style="margin-top:14px;font-size:.78rem;color:var(--muted);line-height:1.6">
+          That&rsquo;s the entire setup. When an AI bot visits your site, an anonymous signal (bot name + path, no IP, no personal data) is sent to this network automatically.
+        </div>
+      </div>
     </div>
 
-    <div style="margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;padding:18px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px;font-size:.88rem;color:var(--muted);line-height:1.6">Once running, register a site and get your private dashboard at <strong style="color:var(--text)">/dashboard</strong>.</div>
-      <a class="btn-p" href="https://github.com/darthm1ke/ai-observatory" style="flex-shrink:0">View on GitHub &rarr;</a>
+    <!-- TRACK B: full setup -->
+    <div class="track track-full">
+      <div class="track-head">
+        <div class="track-badge">Full setup &mdash; server required</div>
+        <div class="track-title">Host your own observatory</div>
+        <div class="track-desc">You want a private dashboard at <strong>/dashboard</strong> showing only your site&rsquo;s bot traffic, with full history and per-path breakdown. This requires a server you control.</div>
+      </div>
+      <div class="track-body">
+        <div class="req-chips">
+          <span class="chip">VPS or server</span>
+          <span class="chip">Node.js 22+</span>
+          <span class="chip">PHP or Node.js site</span>
+          <span class="chip">~30 minutes</span>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text"><strong>Clone &amp; run the server</strong> <span>on your VPS. This is the backend that stores your site&rsquo;s data.</span>
+              <div style="margin-top:8px">
+                <div class="install-tabs">
+                  <button class="itab active" onclick="tab3('full-docker')">Docker</button>
+                  <button class="itab" onclick="tab3('full-node')">Node.js</button>
+                </div>
+                <div class="iblock active" id="t-full-docker">
+                  <div class="ib-head"><span>terminal</span><button class="copy-btn" onclick="copy('c-docker')">copy</button></div>
+                  <pre class="code" id="c-docker">git clone https://github.com/darthm1ke/ai-observatory
+<span class="kw">cd</span> ai-observatory
+cp .env.example .env  <span class="cmt"># set ADMIN_KEY and IP_SALT</span>
+docker compose up -d</pre>
+                </div>
+                <div class="iblock" id="t-full-node">
+                  <div class="ib-head"><span>terminal</span><button class="copy-btn" onclick="copy('c-node-srv')">copy</button></div>
+                  <pre class="code" id="c-node-srv">git clone https://github.com/darthm1ke/ai-observatory
+<span class="kw">cd</span> ai-observatory
+cp .env.example .env  <span class="cmt"># set ADMIN_KEY and IP_SALT</span>
+npm install
+node server/index.js</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text"><strong>Register your site</strong> <span>to get an API key. Replace <code style="color:var(--accent);font-size:.75rem">your-admin-key</code> with what you set in .env.</span>
+              <div style="margin-top:8px">
+                <div class="iblock active" style="display:block">
+                  <div class="ib-head"><span>terminal</span><button class="copy-btn" onclick="copy('c-reg')">copy</button></div>
+                  <pre class="code" id="c-reg">curl -X POST https://your-server.com/sites \
+  -H <span class="str">"X-Admin-Key: your-admin-key"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"domain":"yoursite.com"}'</span>
+<span class="cmt"># Returns your API key</span></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text"><strong>Install the tracker</strong> <span>on your website using the API key you just received.</span>
+              <div style="margin-top:8px">
+                <div class="install-tabs">
+                  <button class="itab active" onclick="tab4('trk-php')">PHP site</button>
+                  <button class="itab" onclick="tab4('trk-node')">Node.js site</button>
+                </div>
+                <div class="iblock active" id="t-trk-php">
+                  <div class="ib-head"><span>header.php</span><button class="copy-btn" onclick="copy('c-trk-php')">copy</button></div>
+                  <pre class="code" id="c-trk-php"><span class="fn">define</span>(<span class="str">'AIO_API_KEY'</span>,  <span class="str">'your-api-key'</span>);
+<span class="fn">define</span>(<span class="str">'AIO_ENDPOINT'</span>, <span class="str">'https://your-server.com/beacon'</span>);
+<span class="kw">require_once</span> <span class="str">'ai-observatory.php'</span>;</pre>
+                </div>
+                <div class="iblock" id="t-trk-node">
+                  <div class="ib-head"><span>server.js</span><button class="copy-btn" onclick="copy('c-trk-node')">copy</button></div>
+                  <pre class="code" id="c-trk-node"><span class="kw">const</span> { <span class="var">observatory</span> } = <span class="fn">require</span>(<span class="str">'./ai-observatory'</span>);
+<span class="var">app</span>.<span class="fn">use</span>(<span class="fn">observatory</span>({
+  <span class="var">apiKey</span>:   <span class="str">'your-api-key'</span>,
+  <span class="var">endpoint</span>: <span class="str">'https://your-server.com/beacon'</span>,
+}));</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text"><strong>Open your dashboard</strong> <span>at <code style="color:var(--accent);font-size:.75rem">https://your-server.com/dashboard</code> and enter your API key. Your bot data will start appearing as bots visit your site.</span></div>
+          </div>
+        </div>
+      </div>
     </div>
+
+  </div>
+
+  <div style="margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap" class="reveal reveal-delay-2">
+    <div style="flex:1;min-width:200px;font-size:.84rem;color:var(--muted);line-height:1.6">Full documentation, the .env reference, and the complete bot registry are on GitHub.</div>
+    <a class="btn-p" href="https://github.com/darthm1ke/ai-observatory" style="flex-shrink:0">View on GitHub &rarr;</a>
   </div>
 </section>
 
@@ -546,6 +673,23 @@ function tab(id) {
     document.getElementById('t-' + k).classList.toggle('active', k === id);
   });
 }
+function tabGroup(ids, active) {
+  ids.forEach(id => {
+    const block = document.getElementById('t-' + id);
+    if (!block) return;
+    block.classList.toggle('active', id === active);
+    // find the corresponding tab button
+    const head = block.previousElementSibling;
+    if (head && head.classList.contains('install-tabs')) {
+      head.querySelectorAll('.itab').forEach((btn, i) => {
+        btn.classList.toggle('active', ids[i] === active);
+      });
+    }
+  });
+}
+function tab2(id) { tabGroup(['easy-php'], id); }
+function tab3(id) { tabGroup(['full-docker','full-node'], id); }
+function tab4(id) { tabGroup(['trk-php','trk-node'], id); }
 function copy(id) {
   navigator.clipboard?.writeText(document.getElementById(id).innerText).then(() => {
     const btn = document.getElementById(id).closest('.iblock').querySelector('.copy-btn');
