@@ -294,6 +294,19 @@
     .track-title{font-family:var(--ff-d);font-size:1rem;font-weight:700;margin-bottom:4px}
     .track-desc{font-size:.78rem;color:var(--muted);line-height:1.5}
     .track-body{padding:20px 22px}
+    /* full track collapse */
+    .track-collapsed .track-steps{display:none}
+    .track-expand-btn{
+      display:flex;align-items:center;justify-content:space-between;
+      width:100%;padding:13px 22px;
+      border:none;border-top:1px solid var(--border);background:var(--raised);
+      font-family:var(--ff-m);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;
+      color:var(--accent);cursor:pointer;transition:background .15s;
+    }
+    .track-expand-btn:hover{background:var(--dim)}
+    .expand-chevron{transition:transform .25s ease;font-size:.8rem;line-height:1}
+    .track-collapsed .expand-chevron{transform:rotate(0deg)}
+    .track-full:not(.track-collapsed) .expand-chevron{transform:rotate(180deg)}
     /* easy track */
     .req-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
     .chip{font-family:var(--ff-m);font-size:.62rem;padding:3px 9px;border-radius:3px;background:var(--raised);border:1px solid var(--border);color:var(--muted)}
@@ -515,9 +528,9 @@
     <!-- TRACK A: contribute only -->
     <div class="track track-easy">
       <div class="track-head">
-        <div class="track-badge">Easiest &mdash; no server required</div>
+        <div class="track-badge">Easiest · no server required</div>
         <div class="track-title">Just contribute to the network</div>
-        <div class="track-desc">You have a PHP website. You want your bot traffic to show up in the public data above. That&rsquo;s it &mdash; no account, no server, no dashboard.</div>
+        <div class="track-desc">You have a PHP website. You want your bot traffic to show up in the public data above. No account, no server, no dashboard.</div>
       </div>
       <div class="track-body">
         <div class="req-chips">
@@ -550,12 +563,17 @@
     </div>
 
     <!-- TRACK B: full setup -->
-    <div class="track track-full">
+    <div class="track track-full track-collapsed" id="track-full">
       <div class="track-head">
-        <div class="track-badge">Full setup &mdash; server required</div>
+        <div class="track-badge">Full setup · server required</div>
         <div class="track-title">Host your own observatory</div>
         <div class="track-desc">You want a private dashboard at <strong>/dashboard</strong> showing only your site&rsquo;s bot traffic, with full history and per-path breakdown. This requires a server you control.</div>
       </div>
+      <button class="track-expand-btn" onclick="toggleFullTrack()" id="expand-btn">
+        <span id="expand-label">Show setup steps</span>
+        <span class="expand-chevron">&#8964;</span>
+      </button>
+      <div class="track-steps">
       <div class="track-body">
         <div class="req-chips">
           <span class="chip">VPS or server</span>
@@ -636,6 +654,7 @@ node server/index.js</pre>
           </div>
         </div>
       </div>
+      </div><!-- /.track-steps -->
     </div>
 
   </div>
@@ -690,6 +709,12 @@ function tabGroup(ids, active) {
 function tab2(id) { tabGroup(['easy-php'], id); }
 function tab3(id) { tabGroup(['full-docker','full-node'], id); }
 function tab4(id) { tabGroup(['trk-php','trk-node'], id); }
+function toggleFullTrack() {
+  const card = document.getElementById('track-full');
+  const label = document.getElementById('expand-label');
+  const collapsed = card.classList.toggle('track-collapsed');
+  label.textContent = collapsed ? 'Show setup steps' : 'Hide setup steps';
+}
 function copy(id) {
   navigator.clipboard?.writeText(document.getElementById(id).innerText).then(() => {
     const btn = document.getElementById(id).closest('.iblock').querySelector('.copy-btn');
