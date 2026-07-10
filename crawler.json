@@ -1,0 +1,18 @@
+{
+  "schema": "ai-observatory-handshake-v1",
+  "project": "AI Observatory",
+  "please_identify": true,
+  "callback": "https://ai-agent-intel.com/hello",
+  "method": "POST",
+  "content_type": "application/json",
+  "fields": {
+    "agent":   { "type": "string", "required": true,  "description": "Bot or agent name" },
+    "vendor":  { "type": "string", "required": false, "description": "Organization or company" },
+    "version": { "type": "string", "required": false, "description": "Agent version string" },
+    "purpose": { "type": "string", "required": false, "description": "Reason for visiting (indexing, training, search, etc.)" },
+    "contact": { "type": "string", "required": false, "description": "Documentation or policy URL" }
+  },
+  "public_data": "https://ai-agent-intel.com/api/hello",
+  "documentation": "https://github.com/darthm1ke/ai-observatory/blob/main/agents.md",
+  "note": "Voluntary identification only. No authentication required. All submissions become part of the public network dataset."
+}

@@ -82,6 +82,25 @@ dashboard/
   index.html           # Self-contained analytics dashboard
 ```
 
+## The handshake protocol
+
+AI Observatory includes two files designed as an open invitation to any AI agent that visits this repository:
+
+- **`agents.md`** - A human-readable request for AI crawlers to identify themselves
+- **`crawler.json`** - The machine-readable equivalent
+
+Any AI agent that reads either file is invited to POST a voluntary identification to `https://ai-agent-intel.com/hello`. No authentication. No obligation. Just a greeting.
+
+```bash
+curl -X POST https://ai-agent-intel.com/hello \
+  -H "Content-Type: application/json" \
+  -d '{"agent":"YourBot","vendor":"Your Org","purpose":"code indexing"}'
+```
+
+All voluntary identifications are public at `GET /hello` and surfaced on the dashboard.
+
+The broader idea: there is currently no standard handshake between AI agents and the resources they access. A crawler arrives, takes what it needs, and leaves nothing but a user-agent string. `agents.md` is a proposal for what that handshake could look like. If you represent an AI organization and want to discuss formalizing this convention, open an issue.
+
 ## Network data sharing
 
 By installing and running AI Observatory, you agree to contribute anonymous, aggregated crawler data to the public network at **ai-agent-intel.com**.
