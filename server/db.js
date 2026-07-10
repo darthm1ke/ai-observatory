@@ -1,15 +1,15 @@
-const Database = require("better-sqlite3");
+const { DatabaseSync } = require("node:sqlite");
 const path = require("path");
-const fs = require("fs");
+const fs   = require("fs");
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "../data");
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
-const db = new Database(path.join(DATA_DIR, "observatory.db"));
+const db = new DatabaseSync(path.join(DATA_DIR, "observatory.db"));
 
-db.pragma("journal_mode = WAL");
-db.pragma("synchronous = NORMAL");
-db.pragma("foreign_keys = ON");
+db.exec("PRAGMA journal_mode=WAL");
+db.exec("PRAGMA synchronous=NORMAL");
+db.exec("PRAGMA foreign_keys=ON");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS sites (
@@ -26,9 +26,6 @@ db.exec(`
     bot_vendor    TEXT,
     user_agent    TEXT    NOT NULL,
     ip_hash       TEXT    NOT NULL,
-    asn           TEXT,
-    asn_org       TEXT,
-    country       TEXT,
     started_at    INTEGER NOT NULL DEFAULT (unixepoch()),
     last_seen_at  INTEGER NOT NULL DEFAULT (unixepoch()),
     request_count INTEGER NOT NULL DEFAULT 0,
@@ -40,16 +37,16 @@ db.exec(`
   );
 
   CREATE TABLE IF NOT EXISTS events (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id  TEXT    NOT NULL REFERENCES sessions(id),
-    site_id     INTEGER NOT NULL REFERENCES sites(id),
-    path        TEXT    NOT NULL,
-    method      TEXT    NOT NULL DEFAULT 'GET',
-    status      INTEGER,
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id    TEXT    NOT NULL REFERENCES sessions(id),
+    site_id       INTEGER NOT NULL REFERENCES sites(id),
+    path          TEXT    NOT NULL,
+    method        TEXT    NOT NULL DEFAULT 'GET',
+    status        INTEGER,
     path_category TEXT,
-    is_probe    INTEGER NOT NULL DEFAULT 0,
-    seq         INTEGER NOT NULL DEFAULT 0,
-    ts          INTEGER NOT NULL DEFAULT (unixepoch())
+    is_probe      INTEGER NOT NULL DEFAULT 0,
+    seq           INTEGER NOT NULL DEFAULT 0,
+    ts            INTEGER NOT NULL DEFAULT (unixepoch())
   );
 
   CREATE INDEX IF NOT EXISTS idx_events_session  ON events(session_id);
@@ -61,43 +58,42 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sessions_ts     ON sessions(started_at);
 `);
 
-// --- Sites ---
+// node:sqlite uses $name syntax for named parameters (object keys without $)
 
 const getSiteByKey = db.prepare("SELECT * FROM sites WHERE api_key = ?");
-const insertSite = db.prepare(
+
+// RETURNING * works with .get() in node:sqlite
+const _insertSiteStmt = db.prepare(
   "INSERT INTO sites (api_key, domain) VALUES (?, ?) RETURNING *"
 );
-
-// --- Sessions ---
+const insertSite = { get: (key, domain) => _insertSiteStmt.get(key, domain) };
 
 const getSession = db.prepare("SELECT * FROM sessions WHERE id = ?");
+
 const insertSession = db.prepare(`
   INSERT INTO sessions (id, site_id, bot_name, bot_vendor, user_agent, ip_hash, is_ai_bot)
-  VALUES (@id, @site_id, @bot_name, @bot_vendor, @user_agent, @ip_hash, @is_ai_bot)
+  VALUES ($id, $site_id, $bot_name, $bot_vendor, $user_agent, $ip_hash, $is_ai_bot)
 `);
+
 const updateSession = db.prepare(`
   UPDATE sessions SET
     last_seen_at  = unixepoch(),
     request_count = request_count + 1,
-    robots_fetched  = MAX(robots_fetched, @robots_fetched),
-    sitemap_fetched = MAX(sitemap_fetched, @sitemap_fetched),
-    openapi_fetched = MAX(openapi_fetched, @openapi_fetched),
-    llmstxt_fetched = MAX(llmstxt_fetched, @llmstxt_fetched)
-  WHERE id = @id
+    robots_fetched  = MAX(robots_fetched, $robots_fetched),
+    sitemap_fetched = MAX(sitemap_fetched, $sitemap_fetched),
+    openapi_fetched = MAX(openapi_fetched, $openapi_fetched),
+    llmstxt_fetched = MAX(llmstxt_fetched, $llmstxt_fetched)
+  WHERE id = $id
 `);
-
-// --- Events ---
 
 const insertEvent = db.prepare(`
   INSERT INTO events (session_id, site_id, path, method, status, path_category, is_probe, seq)
-  VALUES (@session_id, @site_id, @path, @method, @status, @path_category, @is_probe, @seq)
+  VALUES ($session_id, $site_id, $path, $method, $status, $path_category, $is_probe, $seq)
 `);
 
 const getEventCount = db.prepare(
   "SELECT COUNT(*) AS cnt FROM events WHERE session_id = ?"
 );
-
-// --- Stats queries ---
 
 const statTotalSessions = db.prepare(
   "SELECT COUNT(*) AS n FROM sessions WHERE site_id = ? AND started_at >= ?"
@@ -152,12 +148,12 @@ module.exports = {
   insertEvent,
   getEventCount,
   stats: {
-    totalSessions:  (siteId, since) => statTotalSessions.get(siteId, since).n,
-    aiBotSessions:  (siteId, since) => statAiBotSessions.get(siteId, since).n,
-    topBots:        (siteId, since) => statTopBots.all(siteId, since),
-    topPaths:       (siteId, since) => statTopPaths.all(siteId, since),
-    probeRates:     (siteId, since) => statProbeRates.get(siteId, since),
-    firstPaths:     (siteId, since) => statFirstPaths.all(siteId, siteId, since),
-    dailyVolume:    (siteId, since) => statDailyVolume.all(siteId, since),
+    totalSessions: (siteId, since) => (statTotalSessions.get(siteId, since) || {}).n || 0,
+    aiBotSessions: (siteId, since) => (statAiBotSessions.get(siteId, since) || {}).n || 0,
+    topBots:       (siteId, since) => statTopBots.all(siteId, since),
+    topPaths:      (siteId, since) => statTopPaths.all(siteId, since),
+    probeRates:    (siteId, since) => statProbeRates.get(siteId, since),
+    firstPaths:    (siteId, since) => statFirstPaths.all(siteId, siteId, since),
+    dailyVolume:   (siteId, since) => statDailyVolume.all(siteId, since),
   },
 };
