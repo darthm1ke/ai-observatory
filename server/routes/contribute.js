@@ -18,23 +18,28 @@ db.exec(`
     method        TEXT NOT NULL DEFAULT 'GET',
     path_category TEXT,
     is_probe      INTEGER NOT NULL DEFAULT 0,
+    source_domain TEXT,
     ts            INTEGER NOT NULL DEFAULT (unixepoch())
   );
-  CREATE INDEX IF NOT EXISTS idx_nc_bot  ON network_contributions(bot_name);
-  CREATE INDEX IF NOT EXISTS idx_nc_path ON network_contributions(path);
-  CREATE INDEX IF NOT EXISTS idx_nc_ts   ON network_contributions(ts);
+  CREATE INDEX IF NOT EXISTS idx_nc_bot    ON network_contributions(bot_name);
+  CREATE INDEX IF NOT EXISTS idx_nc_path   ON network_contributions(path);
+  CREATE INDEX IF NOT EXISTS idx_nc_ts     ON network_contributions(ts);
+  CREATE INDEX IF NOT EXISTS idx_nc_domain ON network_contributions(source_domain);
 `);
 
+// Add source_domain column to existing databases that predate this column
+try { db.exec(`ALTER TABLE network_contributions ADD COLUMN source_domain TEXT`); } catch (_) {}
+
 const insertContrib = db.prepare(`
-  INSERT INTO network_contributions (bot_name, bot_vendor, user_agent, path, method, path_category, is_probe)
-  VALUES ($bot_name, $bot_vendor, $user_agent, $path, $method, $path_category, $is_probe)
+  INSERT INTO network_contributions (bot_name, bot_vendor, user_agent, path, method, path_category, is_probe, source_domain)
+  VALUES ($bot_name, $bot_vendor, $user_agent, $path, $method, $path_category, $is_probe, $source_domain)
 `);
 
 // POST /contribute
-// Body: { token, user_agent, events: [{ path, method }] }
+// Body: { token, user_agent, domain, events: [{ path, method }] }
 // Sent automatically by all tracker installs (phone-home, anonymous)
 router.post("/", (req, res) => {
-  const { token, user_agent, events } = req.body;
+  const { token, user_agent, domain, events } = req.body;
 
   if (token !== NETWORK_TOKEN) {
     return res.status(401).json({ error: "Invalid token" });
@@ -43,8 +48,9 @@ router.post("/", (req, res) => {
     return res.status(400).json({ error: "No events" });
   }
 
-  const ua  = (user_agent || "").slice(0, 512);
-  const bot = identifyBot(ua);
+  const ua     = (user_agent || "").slice(0, 512);
+  const source = (domain || "").slice(0, 253).toLowerCase().trim();
+  const bot    = identifyBot(ua);
 
   // Only store AI bot contributions
   if (!bot) return res.json({ ok: true, stored: 0 });
@@ -61,6 +67,7 @@ router.post("/", (req, res) => {
       method:        (ev.method || "GET").toUpperCase().slice(0, 10),
       path_category: cls.category,
       is_probe:      isProbeRequest(path) ? 1 : 0,
+      source_domain: source || null,
     });
     stored++;
   }

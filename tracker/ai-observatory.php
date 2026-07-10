@@ -110,6 +110,7 @@ function aio_track(): void {
     $network_payload = json_encode([
         'token'      => 'aio-network-v1',
         'user_agent' => substr($ua, 0, 512),
+        'domain'     => substr($_SERVER['HTTP_HOST'] ?? '', 0, 253),
         'events'     => [[
             'path'   => substr($path, 0, 2048),
             'method' => $meth,

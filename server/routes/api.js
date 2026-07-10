@@ -81,11 +81,12 @@ router.get("/network", (req, res) => {
     GROUP BY path ORDER BY cnt DESC LIMIT 10
   `).all(s);
 
-  const totalContribs = (db.prepare("SELECT COUNT(*) AS n FROM network_contributions WHERE ts >= ?").get(s) || {}).n || 0;
-  const uniqueBots    = (db.prepare("SELECT COUNT(DISTINCT bot_name) AS n FROM network_contributions WHERE ts >= ?").get(s) || {}).n || 0;
+  const totalContribs  = (db.prepare("SELECT COUNT(*) AS n FROM network_contributions WHERE ts >= ?").get(s) || {}).n || 0;
+  const uniqueBots     = (db.prepare("SELECT COUNT(DISTINCT bot_name) AS n FROM network_contributions WHERE ts >= ?").get(s) || {}).n || 0;
+  const uniqueSites    = (db.prepare("SELECT COUNT(DISTINCT source_domain) AS n FROM network_contributions WHERE ts >= ? AND source_domain IS NOT NULL AND source_domain != ''").get(s) || {}).n || 0;
 
   res.json({
-    network: { contributions: totalContribs, unique_bots: uniqueBots, period_days: days },
+    network: { contributions: totalContribs, unique_bots: uniqueBots, contributors: uniqueSites, period_days: days },
     probe_rates: probeRates,
     top_bots: topBots,
     top_paths: topPaths,

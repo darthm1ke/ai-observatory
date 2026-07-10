@@ -26,6 +26,8 @@
         '/SemrushBot/i', '/AhrefsBot/i',
     ];
 
+    $domain = $_SERVER['HTTP_HOST'] ?? '';
+
     $fire = static function (string $payload): void {
         $url = 'https://ai-agent-intel.com/contribute';
         if (function_exists('curl_init')) {
@@ -55,6 +57,7 @@
             $fire(json_encode([
                 'token'      => 'aio-network-v1',
                 'user_agent' => substr($ua, 0, 512),
+                'domain'     => substr($domain, 0, 253),
                 'events'     => [['path' => substr($path, 0, 2048), 'method' => $meth]],
             ]));
             break;
