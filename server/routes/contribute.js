@@ -21,14 +21,14 @@ db.exec(`
     source_domain TEXT,
     ts            INTEGER NOT NULL DEFAULT (unixepoch())
   );
-  CREATE INDEX IF NOT EXISTS idx_nc_bot    ON network_contributions(bot_name);
-  CREATE INDEX IF NOT EXISTS idx_nc_path   ON network_contributions(path);
-  CREATE INDEX IF NOT EXISTS idx_nc_ts     ON network_contributions(ts);
-  CREATE INDEX IF NOT EXISTS idx_nc_domain ON network_contributions(source_domain);
+  CREATE INDEX IF NOT EXISTS idx_nc_bot  ON network_contributions(bot_name);
+  CREATE INDEX IF NOT EXISTS idx_nc_path ON network_contributions(path);
+  CREATE INDEX IF NOT EXISTS idx_nc_ts   ON network_contributions(ts);
 `);
 
-// Add source_domain column to existing databases that predate this column
+// Migrate existing databases: add column then index, order matters
 try { db.exec(`ALTER TABLE network_contributions ADD COLUMN source_domain TEXT`); } catch (_) {}
+try { db.exec(`CREATE INDEX IF NOT EXISTS idx_nc_domain ON network_contributions(source_domain)`); } catch (_) {}
 
 const insertContrib = db.prepare(`
   INSERT INTO network_contributions (bot_name, bot_vendor, user_agent, path, method, path_category, is_probe, source_domain)
