@@ -1,0 +1,13 @@
+services:
+  observatory:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=3000
+      - ADMIN_KEY=${ADMIN_KEY}
+      - IP_SALT=${IP_SALT}
+      - DATA_DIR=/app/data
