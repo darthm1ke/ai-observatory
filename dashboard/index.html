@@ -169,6 +169,19 @@
     .ns-val{font-family:var(--ff-m);font-size:clamp(1.6rem,3vw,2.2rem);font-weight:700;color:var(--accent);line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
     .ns-lbl{font-family:var(--ff-m);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
     @media(max-width:580px){.net-strip{grid-template-columns:1fr 1fr}.ns{border-bottom:1px solid var(--border)}}
+    /* countdown bar row */
+    .ns-footer{
+      grid-column:1/-1;
+      display:flex;align-items:center;gap:10px;
+      padding:8px 20px;border-top:1px solid var(--border);
+      background:var(--raised);
+    }
+    .ns-countdown-bar{flex:1;height:2px;background:var(--dim);border-radius:2px;overflow:hidden}
+    .ns-countdown-fill{height:100%;background:var(--accent);border-radius:2px;transform-origin:left;transition:none}
+    .ns-countdown-label{font-family:var(--ff-m);font-size:.6rem;color:var(--muted);letter-spacing:.06em;white-space:nowrap;flex-shrink:0}
+    /* flash on refresh */
+    @keyframes tileFlash{0%{background:var(--a2)}60%{background:var(--a2)}100%{background:transparent}}
+    .ns-flash{animation:tileFlash .9s ease forwards}
 
     /* ---------- SECTION WRAPPER ---------- */
     .section{padding:clamp(50px,8vw,100px) clamp(20px,4vw,60px)}
@@ -370,6 +383,10 @@
   <div class="ns"><div class="ns-val" id="ns-bots">--</div><div class="ns-lbl">Bot types seen</div></div>
   <div class="ns"><div class="ns-val" id="ns-robots">--%</div><div class="ns-lbl">Fetch robots.txt</div></div>
   <div class="ns"><div class="ns-val" id="ns-llms">--%</div><div class="ns-lbl">Probe /llms.txt</div></div>
+  <div class="ns-footer">
+    <div class="ns-countdown-bar"><div class="ns-countdown-fill" id="ns-cd-fill"></div></div>
+    <span class="ns-countdown-label" id="ns-cd-label">refreshing&hellip;</span>
+  </div>
 </div>
 
 <hr class="div">
@@ -864,7 +881,7 @@ const CAT = { discovery:'b-discovery','ai-native':'b-ai', api:'b-api', content:'
 async function loadNetwork() {
   const res = await fetch('/api/network?days=30').catch(() => null);
   const d   = res?.ok ? await res.json() : null;
-  if (!d) { document.getElementById('nb-sub').textContent = 'no data yet'; renderEmpty(); return; }
+  if (!d) { document.getElementById('nb-sub').textContent = 'no data yet'; renderEmpty(); return d; }
 
   const net   = d.network || {};
   const pr    = d.probe_rates || {};
@@ -957,8 +974,55 @@ async function loadHellos() {
   </table>`;
 }
 
+// ---- AUTO-REFRESH WITH COUNTDOWN ----
+const REFRESH_MS = 5 * 60 * 1000; // 5 minutes
+let refreshAt = Date.now() + REFRESH_MS;
+
+function fmtCountdown(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+function flashTiles() {
+  document.querySelectorAll('.ns').forEach(el => {
+    el.classList.remove('ns-flash');
+    void el.offsetWidth; // reflow to restart animation
+    el.classList.add('ns-flash');
+  });
+}
+
+function tickCountdown() {
+  const remaining = refreshAt - Date.now();
+  const fill = document.getElementById('ns-cd-fill');
+  const label = document.getElementById('ns-cd-label');
+
+  if (remaining <= 0) {
+    // Trigger refresh
+    label.textContent = 'refreshing...';
+    fill.style.width = '0%';
+    loadNetwork().then(() => {
+      flashTiles();
+      refreshAt = Date.now() + REFRESH_MS;
+    });
+  } else {
+    const pct = (remaining / REFRESH_MS) * 100;
+    fill.style.width = pct + '%';
+    label.textContent = `refresh in ${fmtCountdown(remaining)}`;
+  }
+}
+
 // ---- BOOT ----
-window.addEventListener('load', () => { loadNetwork(); loadHellos(); });
+window.addEventListener('load', () => {
+  loadNetwork();
+  loadHellos();
+  // start countdown bar one tick after load so it shows from full
+  setTimeout(() => {
+    tickCountdown();
+    setInterval(tickCountdown, 1000);
+  }, 800);
+});
 </script>
 </body>
 </html>
