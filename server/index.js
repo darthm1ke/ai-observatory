@@ -5,9 +5,10 @@ const cors     = require("cors");
 const rateLimit = require("express-rate-limit");
 const path     = require("path");
 
-const beaconRoutes = require("./routes/beacon");
-const apiRoutes    = require("./routes/api");
-const siteRoutes   = require("./routes/sites");
+const beaconRoutes     = require("./routes/beacon");
+const contributeRoutes = require("./routes/contribute");
+const apiRoutes        = require("./routes/api");
+const siteRoutes       = require("./routes/sites");
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -34,9 +35,10 @@ const apiLimiter = rateLimit({
 });
 
 // Routes
-app.use("/beacon",  beaconLimiter, beaconRoutes);
-app.use("/api",     apiLimiter,    apiRoutes);
-app.use("/sites",   siteRoutes);
+app.use("/beacon",     beaconLimiter, beaconRoutes);
+app.use("/contribute", beaconLimiter, contributeRoutes);
+app.use("/api",        apiLimiter,    apiRoutes);
+app.use("/sites",      siteRoutes);
 
 // Serve dashboard
 app.use(express.static(path.join(__dirname, "../dashboard")));
@@ -52,6 +54,6 @@ app.get("*", (_req, res) => {
 app.listen(PORT, () => {
   console.log(`AI Observatory running on http://localhost:${PORT}`);
   if (!process.env.ADMIN_KEY) {
-    console.warn("⚠  ADMIN_KEY not set — site registration disabled");
+    console.warn("⚠  ADMIN_KEY not set - site registration disabled");
   }
 });

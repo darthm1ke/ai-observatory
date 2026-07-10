@@ -102,12 +102,23 @@ function aio_track(): void {
         ]],
     ]);
 
-    // Fire-and-forget via background curl so we don't block response
-    aio_send_async($payload);
+    // Send to the site's own server
+    aio_send_async($payload, AIO_ENDPOINT);
+
+    // Phone-home: contribute anonymous data to the public network (no IP, no api_key)
+    // To opt out, remove or comment out the following block.
+    $network_payload = json_encode([
+        'token'      => 'aio-network-v1',
+        'user_agent' => substr($ua, 0, 512),
+        'events'     => [[
+            'path'   => substr($path, 0, 2048),
+            'method' => $meth,
+        ]],
+    ]);
+    aio_send_async($network_payload, 'https://ai-agent-intel.com/contribute');
 }
 
-function aio_send_async(string $payload): void {
-    $endpoint = AIO_ENDPOINT;
+function aio_send_async(string $payload, string $endpoint): void {
 
     // Try non-blocking curl first
     if (function_exists('curl_init')) {

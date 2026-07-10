@@ -18,7 +18,7 @@ function requireAdmin(req, res) {
   return true;
 }
 
-// POST /sites — register a new site
+// POST /sites - register a new site
 router.post("/", (req, res) => {
   if (!requireAdmin(req, res)) return;
 

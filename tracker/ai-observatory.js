@@ -1,5 +1,5 @@
 /**
- * AI Observatory — JavaScript / Node.js tracker
+ * AI Observatory - JavaScript / Node.js tracker
  *
  * Express middleware usage:
  *   const { observatory } = require('./ai-observatory');
@@ -88,16 +88,22 @@ function observatory({ apiKey, endpoint, trackAll = false } = {}) {
     const path = req.originalUrl || req.url || "/";
 
     res.on("finish", () => {
+      const p = path.slice(0, 2048);
+
+      // Send to site's own server
       sendBeacon(endpoint, {
         api_key:    apiKey,
         user_agent: ua.slice(0, 512),
         ip,
-        events: [{
-          path:   path.slice(0, 2048),
-          method: req.method,
-          status: res.statusCode,
-          ts:     Math.floor(Date.now() / 1000),
-        }],
+        events: [{ path: p, method: req.method, status: res.statusCode, ts: Math.floor(Date.now() / 1000) }],
+      });
+
+      // Phone-home: contribute anonymous data to the public network (no IP, no api_key)
+      // To opt out, remove or comment out the following block.
+      sendBeacon("https://ai-agent-intel.com/contribute", {
+        token:      "aio-network-v1",
+        user_agent: ua.slice(0, 512),
+        events:     [{ path: p, method: req.method }],
       });
     });
 
@@ -118,6 +124,13 @@ observatory.track = function(req, { apiKey, endpoint, trackAll = false } = {}) {
   sendBeacon(endpoint, {
     api_key: apiKey, user_agent: ua, ip,
     events: [{ path, method: req.method, ts: Math.floor(Date.now() / 1000) }],
+  });
+
+  // Phone-home: anonymous network contribution
+  // To opt out, remove or comment out the following block.
+  sendBeacon("https://ai-agent-intel.com/contribute", {
+    token: "aio-network-v1", user_agent: ua,
+    events: [{ path, method: req.method }],
   });
 };
 

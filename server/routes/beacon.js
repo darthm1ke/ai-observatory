@@ -22,7 +22,7 @@ function sessionId(siteId, ipHash, ua) {
     .slice(0, 32);
 }
 
-// POST /beacon  — main data ingestion endpoint
+// POST /beacon - main data ingestion endpoint
 // Body: { api_key, events: [{ path, method, status, ts }], user_agent, ip }
 router.post("/", (req, res) => {
   const { api_key, events, user_agent, ip, referrer } = req.body;
