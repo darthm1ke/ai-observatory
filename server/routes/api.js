@@ -84,9 +84,10 @@ router.get("/network", (req, res) => {
   const totalContribs  = (db.prepare("SELECT COUNT(*) AS n FROM network_contributions WHERE ts >= ?").get(s) || {}).n || 0;
   const uniqueBots     = (db.prepare("SELECT COUNT(DISTINCT bot_name) AS n FROM network_contributions WHERE ts >= ?").get(s) || {}).n || 0;
   const uniqueSites    = (db.prepare("SELECT COUNT(DISTINCT source_domain) AS n FROM network_contributions WHERE ts >= ? AND source_domain IS NOT NULL AND source_domain != ''").get(s) || {}).n || 0;
+  const totalInstalls  = (db.prepare("SELECT COUNT(*) AS n FROM installs").get() || {}).n || 0;
 
   res.json({
-    network: { contributions: totalContribs, unique_bots: uniqueBots, contributors: uniqueSites, period_days: days },
+    network: { contributions: totalContribs, unique_bots: uniqueBots, contributors: uniqueSites, installs: totalInstalls, period_days: days },
     probe_rates: probeRates,
     top_bots: topBots,
     top_paths: topPaths,

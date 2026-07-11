@@ -406,10 +406,10 @@
 
 <!-- STATS STRIP -->
 <div class="net-strip reveal reveal-delay-1">
+  <div class="ns"><div class="ns-val" id="ns-installs">--</div><div class="ns-lbl">Tracker installs</div></div>
   <div class="ns"><div class="ns-val" id="ns-contribs">--</div><div class="ns-lbl">Events (30d)</div></div>
   <div class="ns"><div class="ns-val" id="ns-bots">--</div><div class="ns-lbl">Bot types seen</div></div>
   <div class="ns"><div class="ns-val" id="ns-robots">--%</div><div class="ns-lbl">Fetch robots.txt</div></div>
-  <div class="ns"><div class="ns-val" id="ns-llms">--%</div><div class="ns-lbl">Probe /llms.txt</div></div>
 </div>
 
 <hr class="div">
@@ -1056,10 +1056,10 @@ async function loadNetwork() {
   const seq   = d.first_requests || [];
 
   const rPct = pr.robots_pct || 0, lPct = pr.llmstxt_pct || 0;
+  animCount(document.getElementById('ns-installs'), net.installs || 0);
   animCount(document.getElementById('ns-contribs'), net.contributions || 0);
   animCount(document.getElementById('ns-bots'),     net.unique_bots || bots.length || 0);
   animCount(document.getElementById('ns-robots'),   rPct, 900, '%');
-  animCount(document.getElementById('ns-llms'),     lPct, 900, '%');
   document.getElementById('nb-sub').textContent = net.contributions
     ? `${fmt(net.contributions)} events from ${net.contributors || 1} contributing site${net.contributors !== 1 ? 's' : ''}`
     : 'no contributions yet -- be the first';

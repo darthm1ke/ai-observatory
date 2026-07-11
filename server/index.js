@@ -7,6 +7,7 @@ const path     = require("path");
 
 const beaconRoutes     = require("./routes/beacon");
 const contributeRoutes = require("./routes/contribute");
+const installRoutes    = require("./routes/install");
 const helloRoutes      = require("./routes/hello");
 const apiRoutes        = require("./routes/api");
 const siteRoutes       = require("./routes/sites");
@@ -38,6 +39,7 @@ const apiLimiter = rateLimit({
 // Routes
 app.use("/beacon",     beaconLimiter, beaconRoutes);
 app.use("/contribute", beaconLimiter, contributeRoutes);
+app.use("/install",    beaconLimiter, installRoutes);
 app.use("/hello",      apiLimiter,    helloRoutes);
 app.use("/api",        apiLimiter,    apiRoutes);
 app.use("/sites",      siteRoutes);
